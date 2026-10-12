@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Industrial Fault Detection via Bernoulli Restricted Boltzmann Machine (RBM)
 
 A deterministic, CPU-based industrial fault detection prototype built with pure Python, NumPy, and Matplotlib. The system uses a Bernoulli Restricted Boltzmann Machine trained with Contrastive Divergence (CD-1) and detects multi-sensor anomalies via analytical free-energy thresholding.
