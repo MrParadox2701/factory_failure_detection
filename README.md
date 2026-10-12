@@ -379,7 +379,5 @@ streamlit run app.py
 - **Visual Evidence Tabs**: In-app inspection of publication figures (`anomaly_report.png`, `phase7_anomaly_report.png`, and `phase8_anomaly_report.png`).
 
 
-=======
-# factory_failure_detection
-Built an anomaly detector using RBMs to detect failure states in industrial systems
->>>>>>> c8f99cd70d645fb807aae794a074b4cd92d9fa97
+
+
