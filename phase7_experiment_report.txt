@@ -1,0 +1,103 @@
+==========================================================================================
+PHASE 7 ADVANCED ANOMALY DETECTION EXPERIMENT REPORT
+==========================================================================================
+Project: Industrial Fault Detection via Bernoulli Restricted Boltzmann Machine
+Scope: Bilateral Free Energy, Sample Reconstruction Error, and Multi-Score Fusion
+Deterministic Seed: 42 | Training: 2,000 normal samples | Test: 500 samples (70 anomalies)
+
+1. EXECUTIVE SUMMARY
+------------------------------------------------------------------------------------------
+This Phase 7 experiment evaluated two new independent scoring paradigms:
+1. Bilateral Free Energy: Addresses the directional energy asymmetry observed in Phase 6
+   by setting statistical bounds on both upper and lower energy deviations.
+2. Per-Sample Reconstruction Error: Measures coordinate-wise reconstruction distortion
+   to capture localized anomalies that cancel out in aggregate scalar free-energy sums.
+3. Multi-Score Fusion: Evaluates fixed boolean combinations (OR / AND) of bilateral energy
+   and reconstruction error without tuning thresholds against test labels.
+
+Key Findings:
+- Bilateral 3-Sigma Free Energy (A1) achieves Precision=1.0000, Recall=0.6143, F1=0.7611,
+  detecting 43/50 saturation faults in Window 1 with ZERO false positives.
+- Reconstruction Error 3-Sigma (B1) achieves the highest individual F1=0.8872 (Recall=0.8429,
+  Precision=0.9365), successfully detecting all 50 Window 1 faults AND 9/20 Window 2 faults.
+- Combined OR (C1: A1 | B2) achieves F1=0.8130 (Precision=0.9434, Recall=0.7143), detecting
+  44 Window 1 faults and 6 Window 2 faults, demonstrating complementary multi-score coverage.
+
+2. FREE-ENERGY DISTRIBUTION DIAGNOSTICS
+------------------------------------------------------------------------------------------
+
+=== Free Energy F(v) Distribution Statistics ===
+Subset                       |     N |      Mean |      Std |       Min |       Max |  1st %ile |    Median | 99th %ile
+-------------------------------------------------------------------------------------------------------------------
+Train Normal Telemetry       |  2000 |   -3.6133 |   0.0576 |   -3.7924 |   -3.3944 |   -3.7452 |   -3.6127 |   -3.4731
+Test Normal Telemetry        |   430 |   -3.6140 |   0.0530 |   -3.7710 |   -3.4703 |   -3.7315 |   -3.6149 |   -3.4931
+Test Injected Anomalies      |    70 |   -3.7689 |   0.0917 |   -3.8796 |   -3.5487 |   -3.8764 |   -3.8065 |   -3.5517
+  Fault Window 1 [300, 350)  |    50 |   -3.8207 |   0.0281 |   -3.8796 |   -3.7601 |   -3.8773 |   -3.8188 |   -3.7654
+  Fault Window 2 [420, 440)  |    20 |   -3.6392 |   0.0626 |   -3.7581 |   -3.5487 |   -3.7576 |   -3.6221 |   -3.5495
+
+3. RECONSTRUCTION-ERROR DISTRIBUTION DIAGNOSTICS
+------------------------------------------------------------------------------------------
+
+=== Reconstruction Error MSE Distribution Statistics ===
+Subset                       |     N |      Mean |      Std |       Min |       Max |  1st %ile |    Median | 99th %ile
+-------------------------------------------------------------------------------------------------------------------
+Train Normal Telemetry       |  2000 |    0.0219 |   0.0218 |    0.0001 |    0.1863 |    0.0006 |    0.0149 |    0.1056
+Test Normal Telemetry        |   430 |    0.0207 |   0.0186 |    0.0004 |    0.1128 |    0.0006 |    0.0151 |    0.0803
+Test Injected Anomalies      |    70 |    0.1037 |   0.0203 |    0.0598 |    0.1709 |    0.0619 |    0.1024 |    0.1509
+  Fault Window 1 [300, 350)  |    50 |    0.1082 |   0.0169 |    0.0875 |    0.1709 |    0.0879 |    0.1035 |    0.1567
+  Fault Window 2 [420, 440)  |    20 |    0.0924 |   0.0234 |    0.0598 |    0.1320 |    0.0603 |    0.0820 |    0.1319
+
+4. COMPARATIVE EXPERIMENTAL RESULTS
+------------------------------------------------------------------------------------------
+
+=== Performance Comparison Across Detection Methods ===
+Method / Rule                          |  TP |  FP |  TN |  FN |   Prec | Recall |     F1 |  W1 /50 |  W2 /20
+---------------------------------------------------------------------------------------------------------
+Historical Baseline (Upper 3-Sigma)    |   0 |   0 | 430 |  70 | 0.0000 | 0.0000 | 0.0000 |       0 |       0
+Historical Phase 6 (Lower 3-Sigma)     |  43 |   0 | 430 |  27 | 1.0000 | 0.6143 | 0.7611 |      43 |       0
+Historical Phase 6 (Lower 1st %ile)    |  52 |   3 | 427 |  18 | 0.9455 | 0.7429 | 0.8320 |      50 |       2
+A1 - Bilateral 3-Sigma Free Energy     |  43 |   0 | 430 |  27 | 1.0000 | 0.6143 | 0.7611 |      43 |       0
+A2 - Bilateral Percentile Free Energy  |  52 |   4 | 426 |  18 | 0.9286 | 0.7429 | 0.8254 |      50 |       2
+B1 - Reconstruction Error 3-Sigma      |  59 |   4 | 426 |  11 | 0.9365 | 0.8429 | 0.8872 |      50 |       9
+B2 - Reconstruction Error 99th %ile    |  26 |   3 | 427 |  44 | 0.8966 | 0.3714 | 0.5253 |      20 |       6
+C1 - Combined OR (A1 | B2)             |  50 |   3 | 427 |  20 | 0.9434 | 0.7143 | 0.8130 |      44 |       6
+C2 - Combined AND (A1 & B2)            |  19 |   0 | 430 |  51 | 1.0000 | 0.2714 | 0.4270 |      19 |       0
+
+5. SCIENTIFIC DIAGNOSIS & INTERPRETATION
+------------------------------------------------------------------------------------------
+A. Why Bilateral Free Energy Succeeds on Window 1 but Misses Window 2:
+   - Fault Window 1 [300, 350) forces multiple sensors to saturate high (1.0) and drift.
+     Because softplus activations in F(v) = -b^T v - sum softplus(c + W v) grow and are
+     subtracted, F(v) plunges into the lower tail (mean -3.8207 vs. normal -3.6140).
+     Bilateral thresholding (|F - mu| > 3*sigma) cleanly isolates this lower tail.
+   - Fault Window 2 [420, 440) introduces uncorrelated noise spikes spanning [0.0, 1.0].
+     Because some channels are high while others are low, the additive linear and softplus
+     terms cancel each other out across the 8 channels, leaving net scalar free energy
+     virtually identical to normal telemetry (mean -3.6392 vs. normal -3.6140).
+
+B. Why Reconstruction Error Captures Window 2:
+   - Reconstruction error computes ||v - v_hat||^2 = sum_i (v_i - v_hat_i)^2 / 8.
+   - Because squared errors are strictly non-negative, perturbations across distinct channels
+     CANNOT cancel out; instead, they strictly accumulate.
+   - Consequently, reconstruction error jumps from normal baseline 0.0207 to 0.0924 in
+     Window 2 and 0.1082 in Window 1, enabling detection of Window 2 noise spikes.
+
+C. Multi-Score Fusion (Experiment C):
+   - Combining A1 (Bilateral 3-Sigma FE) with B2 (Recon 99th %ile) via OR flags a sample if
+     either physical state is abnormal. This expands coverage to 6/20 Window 2 faults
+     while retaining high precision (0.9434, 3 false positives).
+   - The AND combination (C2) requires simultaneous confirmation, yielding zero false
+     positives (Precision 1.0000) at the expense of lower recall (0.2714).
+
+6. SCIENTIFIC LIMITATIONS & SAFEGUARDS
+------------------------------------------------------------------------------------------
+1. Unsupervised Baseline Hygiene: All thresholds were calculated strictly from normal training
+   telemetry. No test labels were used to search for optimal percentile cutoffs.
+2. Bernoulli Formulation Constraints: Bernoulli RBMs model binary distributions. Feeding
+   continuous inputs in [0, 1] acts as a surrogate mean-field approximation.
+3. Window 2 Residuals: 11 of 20 Window 2 samples in B1 remain below the 3-sigma cutoff,
+   showing that mild noise spikes within normal marginal bounds require deeper covariance
+   modeling or channel-wise residual thresholding.
+4. Research Prototype: These experiments confirm the theoretical viability of multi-score
+   energy/reconstruction fault detection, but do not replace validated production telemetry.
+==========================================================================================
